@@ -28,9 +28,12 @@ function moveTask(state: BoardState, taskId: ID, toColumnId: ID, toIndex: number
   if (!fromColumn || !toColumn) return state
 
   if (fromColumnId === toColumnId) {
-    const ids = fromColumn.taskIds.filter((id) => id !== taskId)
-    ids.splice(clamp(toIndex, 0, ids.length), 0, taskId)
-    return patchColumns(state, { [fromColumn.id]: { ...fromColumn, taskIds: ids } })
+    const oldIndex = fromColumn.taskIds.indexOf(taskId)
+    const newIndex = clamp(toIndex, 0, fromColumn.taskIds.length - 1)
+    if (oldIndex === -1 || oldIndex === newIndex) return state
+    return patchColumns(state, {
+      [fromColumn.id]: { ...fromColumn, taskIds: arrayMove(fromColumn.taskIds, oldIndex, newIndex) },
+    })
   }
 
   const fromIds = fromColumn.taskIds.filter((id) => id !== taskId)

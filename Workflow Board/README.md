@@ -1,73 +1,82 @@
-# React + TypeScript + Vite
+# Workflow Board
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A Trello-style, drag-and-drop task board built with **React 19 + TypeScript + Vite**.
+It demonstrates real state-management patterns and custom hooks behind a **multi-user
+mock collaboration** experience: create, edit, move, and reorder cards across columns,
+switch which teammate you're acting as, and watch simulated collaborators work the board
+in real time.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Drag & drop** (powered by [@dnd-kit](https://dndkit.com)) — reorder cards within a
+  list, move them across lists, and reorder the lists themselves. Keyboard-accessible,
+  with a floating drag overlay.
+- **Full card editing** — title, description, assignee, priority, multiple labels, and
+  due dates (overdue dates are highlighted) in a modal.
+- **Lists** — add, rename (double-click the title), delete, and set a **WIP limit** that
+  turns red when exceeded.
+- **Multi-user mock**
+  - **Acting as** — switch your identity; new actions are attributed to you.
+  - **Presence** — a live stack of online avatars.
+  - **Simulate / Live** — a background engine where other teammates move cards, pick up
+    work, and toggle presence on an interval, all flowing through the same reducer.
+  - **Activity feed** — every action is logged with the responsible user and a relative
+    timestamp.
+- **Search & filter** by text, assignee, or label (`/` focuses search).
+- **Persistence** — board state is saved to `localStorage` and **synced across browser
+  tabs** (open two tabs, act as different people, and watch them update each other).
 
-## React Compiler
+## Architecture
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+State lives in a single normalized store (`columns`, `tasks`, `users` as id-keyed maps
+plus ordering arrays), driven by `useReducer` + Context. Components never dispatch raw
+actions — they go through intent-named custom hooks.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── types.ts                      Domain model (Task, Column, User, …)
+├── constants.ts                  Priority metadata, storage key
+├── state/
+│   ├── actions.ts                Discriminated-union action types
+│   ├── boardReducer.ts           Pure state transitions + auto-logged activity
+│   └── BoardContext.tsx          Provider: persistence + cross-tab sync
+├── hooks/                        Custom hooks (the heart of the app)
+│   ├── useBoard.ts               State + memoized action creators
+│   ├── useCurrentUser.ts         Identity, roster, presence
+│   ├── useTasks.ts               Selectors + board stats
+│   ├── useFilters.ts             Search/assignee/label filter state
+│   ├── useActivityFeed.ts        Recent activity, users resolved
+│   ├── useLocalStorage.ts        Generic persisted state (cross-tab)
+│   └── useSimulatedCollaborators.ts   The "multiplayer" engine
+├── components/                   Board, Column, TaskCard, modal, toolbar, …
+├── utils/                        id / date / array / filter helpers
+└── data/seed.ts                  Realistic demo board
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Getting started
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # type-check + production build
+npm run lint
 ```
+
+> **Note:** Node is installed via `nvm` on this machine. If `node`/`npm` aren't found in a
+> fresh terminal, run `nvm use --lts` (or open a new shell so `~/.zshrc` loads nvm).
+
+### Running in WebStorm
+
+1. **Open** this folder as a project (WebStorm auto-detects the nvm Node interpreter under
+   *Settings → Languages & Frameworks → Node.js*).
+2. WebStorm reads `package.json` — use the **npm** tool window (or the gutter ▶ next to a
+   script) to run `dev`, `build`, or `lint`.
+3. Or add a **Run Configuration** → *npm* → script `dev`, then press ▶.
+4. Open `http://localhost:5173` (WebStorm offers a one-click browser link in the run console).
+
+## Try it
+
+- Toggle **Simulate** and watch the board and activity feed update on their own.
+- Open the app in **two browser tabs**, set a different "Acting as" user in each, and edit
+  a card — the other tab updates instantly.
+- Double-click a list title to rename it; use the **⋯** menu to set a WIP limit.
