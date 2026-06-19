@@ -32,6 +32,47 @@ State lives in a single normalized store (`columns`, `tasks`, `users` as id-keye
 plus ordering arrays), driven by `useReducer` + Context. Components never dispatch raw
 actions — they go through intent-named custom hooks.
 
+### Data flow
+
+Unidirectional: UI → custom hooks → reducer → new state → re-render. State is persisted
+and synced across tabs, and the simulation engine dispatches the *same* actions as other
+"users".
+
+```mermaid
+flowchart TD
+    User(["👤 You + simulated teammates"])
+
+    subgraph UI["UI Components"]
+        Toolbar["Toolbar / filters / presence"]
+        Board["Board · DndContext"]
+        Column["Column"]
+        TaskCard["TaskCard"]
+        Modal["TaskEditModal"]
+        Feed["ActivityFeed"]
+        Board --> Column --> TaskCard
+    end
+
+    subgraph Hooks["Custom Hooks"]
+        H["useBoard · useTasks · useFilters<br/>useCurrentUser · useActivityFeed"]
+    end
+
+    subgraph StateLayer["State Layer · Context + useReducer"]
+        Reducer["boardReducer (pure)"]
+        Store[("BoardState<br/>normalized maps + order")]
+        Reducer --> Store
+    end
+
+    Persist[("localStorage")]
+    Sim["useSimulatedCollaborators"]
+
+    User -->|interact| UI
+    UI -->|call helpers| Hooks
+    Hooks -->|dispatch actions| Reducer
+    Store -->|re-render| UI
+    Store <-->|persist + cross-tab sync| Persist
+    Sim -.->|simulated dispatch| Reducer
+```
+
 ```
 src/
 ├── types.ts                      Domain model (Task, Column, User, …)
@@ -51,6 +92,31 @@ src/
 ├── components/                   Board, Column, TaskCard, modal, toolbar, …
 ├── utils/                        id / date / array / filter helpers
 └── data/seed.ts                  Realistic demo board
+```
+
+### How a drag-and-drop move flows
+
+Cross-column moves happen live during the drag (silently); a single activity entry is
+logged only when the card settles in a different list.
+
+```mermaid
+sequenceDiagram
+    actor U as You
+    participant B as Board · DndContext
+    participant R as boardReducer
+    participant S as BoardState
+    U->>B: pick up card
+    Note over B: onDragStart remembers the origin column
+    loop while hovering another list
+        B->>R: MOVE_TASK (live, silent)
+        R->>S: card crosses into the new column
+        S-->>B: re-render, card animates across
+    end
+    U->>B: drop
+    B->>R: MOVE_TASK (final index)
+    B->>R: LOG "moved card to list" (only if column changed)
+    R->>S: commit move + activity entry
+    S-->>U: board + activity feed update
 ```
 
 ## Getting started
