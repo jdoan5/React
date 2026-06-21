@@ -27,7 +27,9 @@ export function SearchBar({ onSelect }: Props) {
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' && query.trim()) {
-      choose(results[0]?.symbol ?? query.trim())
+      const typed = query.trim().toUpperCase()
+      const exact = results.find((r) => r.symbol === typed)
+      choose(exact?.symbol ?? results[0]?.symbol ?? typed)
     } else if (e.key === 'Escape') {
       setOpen(false)
     }
