@@ -20,12 +20,14 @@ architecture, the complete feature list, and how to run it.
 | --- | --- | --- |
 | 🗂️ **Workflow Board** | A Trello-style drag-and-drop task board with a multi-user mock — switch identities, live presence, simulated collaborators, and an activity feed. | [Folder](./Workflow%20Board) · [README](./Workflow%20Board/README.md) |
 | ✅ **Interactive Habit Tracker** | A habit tracker built around schedule-aware **streaks**, rolling completion **percentages**, and an interactive GitHub-style heatmap. | **[Live ↗](https://interactive-habit-tracker.vercel.app)** · [Folder](./Interactive%20Habit%20Tracker) · [README](./Interactive%20Habit%20Tracker/README.md) |
+| 🔒 **Password Validator** | A real-time password strength checker — entropy-based scoring, estimated time-to-crack, common-password detection, and a crypto-secure generator. | [Folder](./Password%20Validator) · [README](./Password%20Validator/README.md) |
 
 ## Shared approach
 
 Every app here follows the same conventions, so they're easy to read side by side:
 
-- **State** — `Context` + `useReducer` over a normalized store (entities in id-keyed maps + order arrays). No Redux.
+- **State** — `Context` + `useReducer` over a normalized store where shared state warrants it (no Redux); plain local state + hooks for simpler apps.
+- **Tested logic** — the tricky parts (streaks, password entropy) are pure functions with Vitest suites.
 - **Custom hooks** are the only thing components import from the state layer — never raw `dispatch`.
 - **No UI libraries** — charts, modals, and drag interactions are hand-built with SVG/CSS.
 - **Offline-first** — state persists to `localStorage`, which doubles as live cross-tab sync.
@@ -61,6 +63,8 @@ React/
 ├── Workflow Board/             # Trello-style drag-and-drop board
 │   └── README.md               #   ↳ its own docs
 ├── Interactive Habit Tracker/  # Streaks & analytics · ▲ live on Vercel
+│   └── README.md               #   ↳ its own docs
+├── Password Validator/         # Strength scoring + secure generator
 │   └── README.md               #   ↳ its own docs
 └── README.md                   # ← this overview
 ```

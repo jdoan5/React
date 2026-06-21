@@ -18,6 +18,15 @@
         "cd '/Users/jdoan/Documents/GitHub/React/Interactive Habit Tracker' && export PATH=\"/Users/jdoan/.nvm/versions/node/v24.17.0/bin:$PATH\"; exec npm run dev"
       ],
       "port": 5174
+    },
+    {
+      "name": "password-validator",
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": [
+        "-c",
+        "cd '/Users/jdoan/Documents/GitHub/React/Password Validator' && export PATH=\"/Users/jdoan/.nvm/versions/node/v24.17.0/bin:$PATH\"; exec npm run dev"
+      ],
+      "port": 5175
     }
   ]
 }
