@@ -22,7 +22,7 @@ architecture, the complete feature list, and how to run it.
 | 🗂️ **Workflow Board** | A Trello-style drag-and-drop task board with a multi-user mock — switch identities, live presence, simulated collaborators, and an activity feed. | [Folder](./Workflow%20Board) · [README](./Workflow%20Board/README.md) |
 | ✅ **Interactive Habit Tracker** | A habit tracker built around schedule-aware **streaks**, rolling completion **percentages**, and an interactive GitHub-style heatmap. | **[Live ↗](https://interactive-habit-tracker.vercel.app)** · [Folder](./Interactive%20Habit%20Tracker) · [README](./Interactive%20Habit%20Tracker/README.md) |
 | 🔒 **Password Validator** | A real-time password strength checker — entropy-based scoring, estimated time-to-crack, common-password detection, and a crypto-secure generator. | [Folder](./Password%20Validator) · [README](./Password%20Validator/README.md) |
-| 📈 **Interactive Stocks** | A market dashboard on the **massive.com** API — ticker search, an interactive SVG price chart with range tabs, and a saved watchlist. The API key stays server-side behind a proxy, with a demo-data fallback. | [Folder](./Interactive%20Stocks) · [README](./Interactive%20Stocks/README.md) |
+| 📈 **Interactive Stocks** | A market dashboard on the **massive.com** API — ticker search, an interactive SVG price chart with range tabs, and a saved watchlist. The API key stays server-side behind a proxy, with a demo-data fallback. | **[Live ↗](https://interactive-stocks-zeta.vercel.app)** · [Folder](./Interactive%20Stocks) · [README](./Interactive%20Stocks/README.md) |
 
 ## Shared approach
 
@@ -69,7 +69,7 @@ React/
 │   └── README.md               #   ↳ its own docs
 ├── Password Validator/         # Strength scoring + secure generator
 │   └── README.md               #   ↳ its own docs
-├── Interactive Stocks/         # massive.com API dashboard (Edge-fn proxy)
+├── Interactive Stocks/         # massive.com API dashboard (Edge-fn proxy) · ▲ live on Vercel
 │   └── README.md               #   ↳ its own docs
 └── README.md                   # ← this overview
 ```

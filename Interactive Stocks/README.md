@@ -1,5 +1,7 @@
 # Interactive Stocks
 
+> **🔗 Live: https://interactive-stocks-zeta.vercel.app**
+
 A stock dashboard built with **React 19 + TypeScript + Vite** that pulls live market data from
 the [massive.com](https://massive.com) REST API — ticker search, a live quote, an interactive
 hand-built SVG price chart with range tabs, and a saved watchlist with sparklines.

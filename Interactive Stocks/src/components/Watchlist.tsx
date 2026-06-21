@@ -9,12 +9,14 @@ import { Sparkline } from './Sparkline'
 interface RowProps {
   symbol: string
   active: boolean
+  /** Staggered so the main panel wins the rate-limit budget first. */
+  delay: number
   onSelect: (s: string) => void
   onRemove: (s: string) => void
 }
 
-function WatchlistRow({ symbol, active, onSelect, onRemove }: RowProps) {
-  const { quote } = useQuote(symbol)
+function WatchlistRow({ symbol, active, delay, onSelect, onRemove }: RowProps) {
+  const { quote } = useQuote(symbol, delay)
   // Decorative sparkline from deterministic demo data (keeps API calls to one per row).
   const spark = useMemo(() => closes(mockBars(symbol, '1M')), [symbol])
   const sparkUp = useMemo(() => changeOf(spark).change >= 0, [spark])
@@ -50,8 +52,15 @@ export function Watchlist({ symbols, active, onSelect, onRemove }: Props) {
       <h2 className="watchlist__title">Watchlist</h2>
       {symbols.length === 0 && <p className="watchlist__empty">Star a stock to track it here.</p>}
       <ul className="watchlist__list">
-        {symbols.map((s) => (
-          <WatchlistRow key={s} symbol={s} active={s === active} onSelect={onSelect} onRemove={onRemove} />
+        {symbols.map((s, i) => (
+          <WatchlistRow
+            key={s}
+            symbol={s}
+            active={s === active}
+            delay={400 + i * 350}
+            onSelect={onSelect}
+            onRemove={onRemove}
+          />
         ))}
       </ul>
     </aside>

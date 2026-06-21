@@ -8,9 +8,10 @@ import { UNIVERSE } from '../data/universe'
 
 /**
  * Latest daily quote for a symbol, derived from the (widely-entitled) daily
- * aggregates endpoint. Falls back to demo data when the API is unavailable.
+ * aggregates endpoint. `delayMs` lets the watchlist defer to the main panel so
+ * the primary view wins the rate-limit budget. Falls back to demo data on error.
  */
-export function useQuote(symbol: string) {
+export function useQuote(symbol: string, delayMs = 0) {
   const [quote, setQuote] = useState<Quote | null>(null)
   const [loading, setLoading] = useState(true)
   const [isMock, setIsMock] = useState(false)
@@ -19,7 +20,8 @@ export function useQuote(symbol: string) {
     if (!symbol) return
     setLoading(true)
     const controller = new AbortController()
-    void (async () => {
+
+    const run = async () => {
       const name = UNIVERSE.find((u) => u.symbol === symbol)?.name
       try {
         const to = isoDay(Date.now())
@@ -39,9 +41,17 @@ export function useQuote(symbol: string) {
       } finally {
         setLoading(false)
       }
-    })()
-    return () => controller.abort()
-  }, [symbol])
+    }
+
+    let timer: number | undefined
+    if (delayMs > 0) timer = window.setTimeout(() => void run(), delayMs)
+    else void run()
+
+    return () => {
+      controller.abort()
+      if (timer) window.clearTimeout(timer)
+    }
+  }, [symbol, delayMs])
 
   return { quote, loading, isMock }
 }

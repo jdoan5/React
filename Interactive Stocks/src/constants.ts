@@ -9,7 +9,7 @@ export const RANGES: { key: RangeKey; label: string; days: number }[] = [
 
 export const DEFAULT_SYMBOL = 'AAPL'
 export const WATCHLIST_KEY = 'interactive-stocks:watchlist:v1'
-export const DEFAULT_WATCHLIST = ['AAPL', 'MSFT', 'NVDA', 'TSLA']
+export const DEFAULT_WATCHLIST = ['AAPL', 'MSFT', 'NVDA']
 
 /** Up/down semantic colours. */
 export const UP = '#22c55e'
