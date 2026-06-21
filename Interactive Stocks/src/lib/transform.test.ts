@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bounds, buildChart, changeOf, parseBars, parseQuote, parseTickers } from './transform'
+import { bounds, buildChart, changeOf, parseBars, parseQuote, parseTickers, quoteFromBars } from './transform'
 
 describe('bounds', () => {
   it('handles an empty series', () => {
@@ -58,6 +58,24 @@ describe('parsers', () => {
   it('parseTickers drops entries without a symbol', () => {
     const t = parseTickers({ results: [{ ticker: 'AAPL', name: 'Apple' }, { name: 'nope' }] })
     expect(t).toEqual([{ symbol: 'AAPL', name: 'Apple' }])
+  })
+  it('quoteFromBars derives a daily quote from the last two bars', () => {
+    const q = quoteFromBars(
+      'AAPL',
+      [
+        { t: 1, o: 100, h: 105, l: 99, c: 100, v: 1000 },
+        { t: 2, o: 101, h: 110, l: 100, c: 108, v: 2000 },
+      ],
+      'Apple',
+    )
+    expect(q?.price).toBe(108)
+    expect(q?.prevClose).toBe(100)
+    expect(q?.change).toBeCloseTo(8)
+    expect(q?.changePct).toBeCloseTo(8)
+    expect(q?.volume).toBe(2000)
+  })
+  it('quoteFromBars returns null with no bars', () => {
+    expect(quoteFromBars('X', [])).toBeNull()
   })
   it('parseQuote derives change from a snapshot', () => {
     const q = parseQuote(
