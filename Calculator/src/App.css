@@ -1,0 +1,66 @@
+.App {
+  max-width: 480px;
+  margin: 48px auto;
+  padding: 28px 32px 36px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.18);
+}
+
+.App h1 {
+  font-size: 24px;
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.App h3 {
+  font-size: 34px;
+  margin: 16px 0;
+  color: #4f46e5;
+  font-variant-numeric: tabular-nums;
+}
+
+.App input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.App input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.App button {
+  margin: 4px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #4f46e5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.App button:hover {
+  background: #4338ca;
+}
+
+.App button.reset-input,
+.App button.reset-result {
+  background: #6b7280;
+}
+
+.App button.reset-input:hover,
+.App button.reset-result:hover {
+  background: #4b5563;
+}

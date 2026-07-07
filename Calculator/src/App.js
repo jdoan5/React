@@ -7,40 +7,40 @@ function App() {
 
   function plus(e) {
     e.preventDefault();
-    const inputVal = Number(inputRef.current.value);
-    setResult((result) => result + inputVal);
+    const inputValue = Number(inputRef.current.value);
+    setResult(result + inputValue);
   }
 
   function minus(e) {
     e.preventDefault();
-    const inputVal = inputRef.current.value;
-    setResult((result) => result - inputVal);
+    const inputValue = Number(inputRef.current.value);
+    setResult(result - inputValue);
   }
 
   function times(e) {
     e.preventDefault();
-    const inputVal = inputRef.current.value;
-    setResult((result) => result * inputVal);
+    const inputValue = Number(inputRef.current.value);
+    setResult(result * inputValue);
   }
 
   function divide(e) {
     e.preventDefault();
-    const inputVal = Number(inputRef.current.value);
-    if (inputVal === 0) {
+    const inputValue = Number(inputRef.current.value);
+    if (inputValue === 0) {
       alert('Cannot divide by zero');
-      return;
+    } else {
+      setResult(result / inputValue);
     }
-    setResult((result) => result / inputVal);
   }
 
-  const resetInput = (e) => {
+  function resetInput(e) {
     e.preventDefault();
     inputRef.current.value = '';
-  };
+  }
 
   function resetResult(e) {
     e.preventDefault();
-    setResult(0); // Kept as a number
+    setResult(0);
   }
 
   return (
@@ -63,7 +63,6 @@ function App() {
         <button className="reset-input" onClick={resetInput}>
           Reset Input
         </button>
-        {/* Added the Reset Result button */}
         <button className="reset-result" onClick={resetResult}>
           Reset Result
         </button>
