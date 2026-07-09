@@ -1,41 +1,46 @@
-import React, { useState, useRef } from 'react';
-import './App.css';
+import { useState, useRef } from "react";
+import "./App.css";
 
 function App() {
-  const [result, setResult] = useState(0);
   const inputRef = useRef(null);
+  const resultRef = useRef(null);
+  const [result, setResult] = useState(0);
 
   function plus(e) {
     e.preventDefault();
-    const inputValue = Number(inputRef.current.value);
-    setResult(result + inputValue);
+    const inputVal = inputRef.current.value;
+    const newResult = result + Number(inputVal);
+    setResult(newResult);
   }
 
   function minus(e) {
     e.preventDefault();
-    const inputValue = Number(inputRef.current.value);
-    setResult(result - inputValue);
+    const inputVal = inputRef.current.value;
+    const newResult = result - Number(inputVal);
+    setResult(newResult);
   }
 
   function times(e) {
     e.preventDefault();
-    const inputValue = Number(inputRef.current.value);
-    setResult(result * inputValue);
+    const inputVal = inputRef.current.value;
+    const newResult = result * Number(inputVal);
+    setResult(newResult);
   }
 
   function divide(e) {
     e.preventDefault();
-    const inputValue = Number(inputRef.current.value);
-    if (inputValue === 0) {
-      alert('Cannot divide by zero');
+    const inputVal = Number(inputRef.current.value);
+    if (inputVal === 0) {
+      alert("Cannot divide by zero");
     } else {
-      setResult(result / inputValue);
+      const newResult = result / inputVal;
+      setResult(newResult);
     }
   }
 
   function resetInput(e) {
     e.preventDefault();
-    inputRef.current.value = '';
+    inputRef.current.value = "";
   }
 
   function resetResult(e) {
@@ -49,17 +54,17 @@ function App() {
         <h1>Simplest Working Calculator</h1>
       </div>
       <form>
-        <h3>{result}</h3>
+        <h3 ref={resultRef}>{result}</h3>
         <input
           ref={inputRef}
           pattern="[0-9]"
           type="number"
           placeholder="Type a number"
         />
-        <button onClick={plus}>add</button>
-        <button onClick={minus}>subtract</button>
-        <button onClick={times}>multiply</button>
-        <button onClick={divide}>divide</button>
+        <button onClick={plus}>Add</button>
+        <button onClick={minus}>Subtract</button>
+        <button onClick={times}>Multiply</button>
+        <button onClick={divide}>Divide</button>
         <button className="reset-input" onClick={resetInput}>
           Reset Input
         </button>
