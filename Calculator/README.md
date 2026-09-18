@@ -3,9 +3,11 @@
 A simple calculator built for the Coursera graded lab — add, subtract, multiply, divide,
 plus **Reset Input** and **Reset Result**. Division by zero shows an alert.
 
-Built with **React 18 + Vite**. It was originally scaffolded with Create React App to match
-the lab, but `react-scripts` is unmaintained and dragged in ~45 Dependabot advisories through
-its build tooling, so the project was migrated to Vite. The app itself is unchanged.
+Built with **React 19 + Vite**, matching the rest of this repo. It was originally scaffolded
+with Create React App to match the lab, but `react-scripts` is unmaintained and dragged in
+~45 Dependabot advisories through its build tooling, so the project was migrated to Vite.
+The component code is unchanged — it only uses `useState`, `useRef` and `createRoot`, none of
+which changed in React 19.
 
 ## Run
 
