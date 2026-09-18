@@ -29,7 +29,9 @@ architecture, the complete feature list, and how to run it.
 > **Note on `Calculator`:** it mirrors a Coursera graded lab. The lab's file is `src/App.js`;
 > here it is `src/App.jsx` — Vite needs the extension for JSX — with **byte-identical
 > contents**, so it still pastes into the lab and passes the grader. `npm start` serves on
-> port 3000 to match the lab instructions.
+> port 3000 to match the lab instructions. It also stays on **React 18 on purpose**: it uses
+> only `useState`/`useRef`/`createRoot`, so React 19 adds ~79 kB of bundle for no functional
+> gain on a six-button app.
 
 ## Shared approach
 
