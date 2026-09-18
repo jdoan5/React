@@ -13,8 +13,34 @@ const NEW_TASK_TITLES = [
   'Update dependency versions',
 ]
 
+/**
+ * Cryptographically-secure random integer in [0, max), via rejection sampling.
+ * Nothing here is security-critical — it only decides which simulated teammate
+ * acts next — but using a CSPRNG keeps static analysis (CodeQL
+ * `js/insecure-randomness`) quiet and matches the generator used elsewhere in
+ * this repo.
+ */
+function randomInt(max: number): number {
+  if (max <= 0) return 0
+  const buf = new Uint32Array(1)
+  const limit = Math.floor(0xffffffff / max) * max
+  let value: number
+  do {
+    crypto.getRandomValues(buf)
+    value = buf[0]
+  } while (value >= limit)
+  return value % max
+}
+
+/** Cryptographically-secure float in [0, 1). */
+function randomFloat(): number {
+  const buf = new Uint32Array(1)
+  crypto.getRandomValues(buf)
+  return buf[0] / 0x1_0000_0000
+}
+
 function pick<T>(arr: T[]): T | undefined {
-  return arr.length ? arr[Math.floor(Math.random() * arr.length)] : undefined
+  return arr.length ? arr[randomInt(arr.length)] : undefined
 }
 
 /**
@@ -40,7 +66,7 @@ export function useSimulatedCollaborators(enabled: boolean, intervalMs = 2600) {
 
       if (!actor.online) dispatch({ type: 'SET_PRESENCE', userId: actor.id, online: true })
 
-      const roll = Math.random()
+      const roll = randomFloat()
       const taskIds = Object.keys(s.tasks)
 
       if (roll < 0.6 && taskIds.length) {
@@ -49,7 +75,7 @@ export function useSimulatedCollaborators(enabled: boolean, intervalMs = 2600) {
         const task = s.tasks[taskId]
         const toColumnId = pick(s.columnOrder)!
         const column = s.columns[toColumnId]
-        const toIndex = Math.floor(Math.random() * (column.taskIds.length + 1))
+        const toIndex = randomInt(column.taskIds.length + 1)
         dispatch({ type: 'MOVE_TASK', taskId, toColumnId, toIndex })
         dispatch({ type: 'LOG', userId: actor.id, message: `moved “${task.title}” to ${column.title}` })
       } else if (roll < 0.78 && taskIds.length) {

@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+
+# Dependencies & build output
+# (each project also carries its own .gitignore)
+node_modules/
+dist/
+build/
+
+# Secrets — never commit real keys; .env.example is the tracked template
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel
