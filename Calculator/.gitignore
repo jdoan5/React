@@ -1,9 +1,10 @@
 # dependencies
 /node_modules
 
-# production
-/build
+# build output
+/dist
 
 # misc
 .DS_Store
+*.local
 npm-debug.log*

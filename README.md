@@ -23,15 +23,13 @@ architecture, the complete feature list, and how to run it.
 | ✅ **Interactive Habit Tracker** | A habit tracker built around schedule-aware **streaks**, rolling completion **percentages**, and an interactive GitHub-style heatmap. | **[Live ↗](https://interactive-habit-tracker.vercel.app)** · [Folder](./Interactive%20Habit%20Tracker) · [README](./Interactive%20Habit%20Tracker/README.md) |
 | 🔒 **Password Validator** | A real-time password strength checker — entropy-based scoring, estimated time-to-crack, common-password detection, and a crypto-secure generator. | [Folder](./Password%20Validator) · [README](./Password%20Validator/README.md) |
 | 📈 **Interactive Stocks** | A market dashboard on the **massive.com** API — ticker search, an interactive SVG price chart with range tabs, and a saved watchlist. The API key stays server-side behind a proxy, with a demo-data fallback. | **[Live ↗](https://interactive-stocks-zeta.vercel.app)** · [Folder](./Interactive%20Stocks) · [README](./Interactive%20Stocks/README.md) |
-| 🧮 **Calculator** | A graded-lab calculator — add, subtract, multiply, divide, plus reset-input and reset-result, with division-by-zero handling. Built on `useState` + `useRef`; mirrors the lab's Create React App scaffold. | [Folder](./Calculator) · [README](./Calculator/README.md) |
+| 🧮 **Calculator** | A graded-lab calculator — add, subtract, multiply, divide, plus reset-input and reset-result, with division-by-zero handling. Built on `useState` + `useRef`. | [Folder](./Calculator) · [README](./Calculator/README.md) |
 | ⚖️ **BMI Calculator** | A minimal standalone BMI calculator in a single HTML file — no build step, just open it. | [Folder](./BMI%20Calculator) |
 
-> **Note on `Calculator` and Dependabot:** it mirrors the Coursera lab's Create React App
-> setup, so it depends on the unmaintained `react-scripts@5.0.1`. That drags in a number of
-> advisories in **build-time-only** transitive packages (`svgo`, `serialize-javascript`,
-> `underscore`, …) which never reach the browser bundle. The lockfile is kept for reproducible
-> installs and lab parity, and those alerts are triaged as not-exploitable rather than
-> force-upgraded — `npm audit fix --force` would break `npm start`.
+> **Note on `Calculator`:** it mirrors a Coursera graded lab. The lab's file is `src/App.js`;
+> here it is `src/App.jsx` — Vite needs the extension for JSX — with **byte-identical
+> contents**, so it still pastes into the lab and passes the grader. `npm start` serves on
+> port 3000 to match the lab instructions.
 
 ## Shared approach
 
@@ -55,8 +53,8 @@ flowchart LR
 
 ## Getting started
 
-Each React app is a standard Vite project (except `Calculator`, which uses Create React App;
-`BMI Calculator` is a single HTML file with no build step). To run any of them:
+Every React app is a standard Vite project (`BMI Calculator` is a single HTML file with no
+build step). To run any of them:
 
 ```bash
 cd "<Project Folder>"   # e.g. "Interactive Habit Tracker"
@@ -81,7 +79,7 @@ React/
 │   └── README.md               #   ↳ its own docs
 ├── Interactive Stocks/         # massive.com API dashboard (Edge-fn proxy) · ▲ live on Vercel
 │   └── README.md               #   ↳ its own docs
-├── Calculator/                 # Graded-lab calculator (Create React App)
+├── Calculator/                 # Graded-lab calculator (React + Vite)
 │   └── README.md               #   ↳ its own docs
 ├── BMI Calculator/             # Single-file HTML BMI calculator
 └── README.md                   # ← this overview
