@@ -24,7 +24,7 @@ architecture, the complete feature list, and how to run it.
 | 🔒 **Password Validator** | A real-time password strength checker — entropy-based scoring, estimated time-to-crack, common-password detection, and a crypto-secure generator. | [Folder](./Password%20Validator) · [README](./Password%20Validator/README.md) |
 | 📈 **Interactive Stocks** | A market dashboard on the **massive.com** API — ticker search, an interactive SVG price chart with range tabs, and a saved watchlist. The API key stays server-side behind a proxy, with a demo-data fallback. | **[Live ↗](https://interactive-stocks-zeta.vercel.app)** · [Folder](./Interactive%20Stocks) · [README](./Interactive%20Stocks/README.md) |
 | 🧮 **Calculator** | A graded-lab calculator — add, subtract, multiply, divide, plus reset-input and reset-result, with division-by-zero handling. Built on `useState` + `useRef`. | [Folder](./Calculator) · [README](./Calculator/README.md) |
-| ⚖️ **BMI Calculator** | A minimal standalone BMI calculator in a single HTML file — no build step, just open it. | [Folder](./BMI%20Calculator) |
+| ⚖️ **BMI Calculator** | BMI with WHO category bands, a hand-built SVG gauge, the healthy weight range for your height, lossless metric↔imperial switching, and saved history. | **[Live ↗](https://bmi-calculator-eight-rose.vercel.app)** · [Folder](./BMI%20Calculator) · [README](./BMI%20Calculator/README.md) |
 
 > **Note on `Calculator`:** it mirrors a Coursera graded lab. The lab's file is `src/App.js`;
 > here it is `src/App.jsx` — Vite needs the extension for JSX — with **byte-identical
@@ -55,8 +55,7 @@ flowchart LR
 
 ## Getting started
 
-Every React app is a standard Vite project (`BMI Calculator` is a single HTML file with no
-build step). To run any of them:
+Every app here is a standard Vite project. To run any of them:
 
 ```bash
 cd "<Project Folder>"   # e.g. "Interactive Habit Tracker"
@@ -83,7 +82,8 @@ React/
 │   └── README.md               #   ↳ its own docs
 ├── Calculator/                 # Graded-lab calculator (React + Vite)
 │   └── README.md               #   ↳ its own docs
-├── BMI Calculator/             # Single-file HTML BMI calculator
+├── BMI Calculator/             # BMI with WHO bands + SVG gauge · ▲ live on Vercel
+│   └── README.md               #   ↳ its own docs
 └── README.md                   # ← this overview
 ```
 
