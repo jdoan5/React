@@ -101,3 +101,128 @@ export function planInsert(items: readonly Ordered[], toIndex: number): string {
 export function indexOf(items: readonly Ordered[], id: string): number {
   return sortByOrder(items).findIndex((item) => item.id === id)
 }
+
+// ---------------------------------------------------------------------------
+// Board-level planners
+//
+// Everything above works on plain lists and is what the tests hammer. These wrap
+// it in the board's semantics: read the PROJECTION (snapshot + my own unconfirmed
+// edits), and emit the single absolute value a command will carry.
+//
+// Planning against the projection rather than the snapshot is what makes two
+// quick drags of the same card compose: the second one sees the first.
+//
+// The import below is type-only, so it is erased at compile time and the
+// ordering <-> project cycle never exists at runtime.
+// ---------------------------------------------------------------------------
+
+import { maxKeyLength, rebalance as evenKeys } from './fracIndex'
+import type { Projection } from './project'
+import type { ID } from '../types'
+
+export interface MovePlan {
+  readonly cardId: ID
+  readonly fromColumnId: ID
+  readonly toColumnId: ID
+  /**
+   * Absolute. Emitted together with toColumnId in ONE command, so the row can
+   * never end up holding one client's column with another client's key.
+   */
+  readonly orderKey: string
+}
+
+function orderedCards(p: Projection, columnId: ID): Ordered[] {
+  const column = p.columns[columnId]
+  if (!column) return []
+  const out: Ordered[] = []
+  for (const id of column.cardIds) {
+    const card = p.cards[id]
+    if (card) out.push({ id: card.id, orderKey: card.order_key })
+  }
+  return out
+}
+
+/** null when the drop changes nothing — no command, no write, no traffic. */
+export function planCardMove(
+  p: Projection,
+  cardId: ID,
+  toColumnId: ID,
+  toIndex: number,
+): MovePlan | null {
+  const card = p.cards[cardId]
+  if (!card || !p.columns[toColumnId]) return null
+
+  const fromColumnId = card.column_id
+  const target = orderedCards(p, toColumnId)
+
+  const orderKey =
+    fromColumnId === toColumnId
+      ? planMove(target, cardId, toIndex)
+      : planInsert(target, toIndex)
+
+  if (orderKey === null) return null
+  return { cardId, fromColumnId, toColumnId, orderKey }
+}
+
+export function planColumnMove(
+  p: Projection,
+  columnId: ID,
+  toIndex: number,
+): { columnId: ID; orderKey: string } | null {
+  const items: Ordered[] = []
+  for (const id of p.columnOrder) {
+    const column = p.columns[id]
+    if (column) items.push({ id: column.id, orderKey: column.order_key })
+  }
+  const orderKey = planMove(items, columnId, toIndex)
+  return orderKey === null ? null : { columnId, orderKey }
+}
+
+/** Key for a brand-new card. Defaults to the end, which is where Add card puts it. */
+export function planCardCreate(p: Projection, columnId: ID, atEnd = true): string {
+  const items = orderedCards(p, columnId)
+  return planInsert(items, atEnd ? items.length : 0)
+}
+
+export function planColumnCreate(p: Projection): string {
+  const items: Ordered[] = []
+  for (const id of p.columnOrder) {
+    const column = p.columns[id]
+    if (column) items.push({ id: column.id, orderKey: column.order_key })
+  }
+  return planInsert(items, items.length)
+}
+
+/**
+ * Keys grow about one character per six repeated drags into the identical slot,
+ * so this is a slow-burn condition rather than something that trips in normal
+ * use. Figma's position is that normal usage never reaches a problematic length.
+ */
+export const REBALANCE_KEY_LENGTH = 12
+
+export function needsRebalance(
+  keys: readonly string[],
+  maxLength: number = REBALANCE_KEY_LENGTH,
+): boolean {
+  return maxKeyLength(keys) >= maxLength
+}
+
+/**
+ * Fresh short keys for a whole column, preserving the order currently on screen.
+ *
+ * This is the one operation that writes every row in a column, which is exactly
+ * what fractional indexing exists to avoid — so it stays a deliberate action,
+ * never something that fires automatically mid-drag.
+ */
+export function planRebalance(p: Projection, columnId: ID): readonly MovePlan[] {
+  const items = orderedCards(p, columnId)
+  if (items.length === 0) return []
+  const fresh = evenKeys(items.length)
+  const plans: MovePlan[] = []
+  items.forEach((item, i) => {
+    const key = fresh[i]!
+    if (key === item.orderKey) return // already short and in place
+    plans.push({ cardId: item.id, fromColumnId: columnId, toColumnId: columnId, orderKey: key })
+  })
+  return plans
+}

@@ -1,12 +1,10 @@
 /**
- * Domain model.
+ * Row types — exactly what Postgres returns, snake_case and all, mirroring
+ * supabase/migrations. Keeping the wire shape honest means there is never a
+ * question of what came back from the database.
  *
- * Rows mirror the SQL in supabase/migrations exactly, including snake_case, so
- * there is no guessing about what came back from Postgres. The camelCase domain
- * types are what the UI sees; `src/sync/` is the only place that converts.
- *
- * Ordering is a string `order_key`, never an integer position — see
- * src/lib/fracIndex.ts for why.
+ * The sync-layer types (snapshot, commands, events) live in src/sync/adapter.ts,
+ * which is the seam between the app and whichever transport is backing it.
  */
 
 export type ID = string
@@ -14,13 +12,6 @@ export type ID = string
 export type Priority = 'urgent' | 'high' | 'medium' | 'low'
 
 export type MemberRole = 'owner' | 'editor' | 'viewer'
-
-/** Which adapter is backing the board — surfaced in the UI, never inferred twice. */
-export type SyncMode = 'supabase' | 'demo'
-
-export type SyncStatus = 'connecting' | 'live' | 'offline' | 'error'
-
-// --- Rows, exactly as Postgres returns them --------------------------------
 
 export interface CardRow {
   id: ID
@@ -31,8 +22,11 @@ export interface CardRow {
   assignee_id: ID | null
   priority: Priority
   due_date: string | null
+  /** Fractional index. Sorts lexicographically; ties break on id. */
   order_key: string
+  /** Soft delete — RLS cannot police a DELETE, so archiving is an UPDATE. */
   archived_at: string | null
+  /** Server-assigned by trigger, monotonic. An event at or below this is stale. */
   rev: number
   origin_client_id: string | null
   origin_cmd_id: string | null
@@ -62,42 +56,16 @@ export interface MemberRow {
   joined_at: string
 }
 
-// --- Domain types, as the UI sees them -------------------------------------
-
-export interface Card {
-  id: ID
-  columnId: ID
-  title: string
-  description: string
-  assigneeId: ID | null
-  priority: Priority
-  dueDate: string | null
-  /** Fractional index. Sorts lexicographically; ties break on id. */
-  orderKey: string
-  /** Server-assigned and monotonic. An event at or below this rev is stale. */
-  rev: number
-}
-
-export interface Column {
-  id: ID
-  title: string
-  orderKey: string
-  rev: number
-}
-
-/** A person on the board right now. One human in three tabs is one collaborator. */
+/**
+ * A person on the board right now. One human with three tabs open is ONE
+ * collaborator — collapsing that is the whole job of lib/presence.ts, and it is
+ * exactly the phantom-collaborator illusion the old Workflow Board's simulated
+ * engine created, which this app exists to stop faking.
+ */
 export interface Collaborator {
   userId: ID
   name: string
   color: string
-  /** How many tabs they have open — why one person is not three avatars. */
+  /** How many tabs they have open. */
   tabs: number
-}
-
-/** The authoritative state, as last heard from the server. */
-export interface BoardSnapshot {
-  boardId: ID
-  title: string
-  columns: Record<ID, Column>
-  cards: Record<ID, Card>
 }

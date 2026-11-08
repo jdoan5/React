@@ -9,8 +9,8 @@ engine and `localStorage` sync between tabs. This is the honest version — real
 auth, real sync between real browsers — and it exists mostly to confront the problem the mock
 never had to: **what happens when two people drag the same card at the same time.**
 
-> **Status: stage 1 of 3.** The ordering core is finished and tested, and the board runs on it.
-> The command queue and the Supabase adapter are next — see [Build order](#build-order).
+> **Complete.** Ordering core, optimistic sync with rollback, and the Supabase layer —
+> presence, live cursors, anonymous auth and RLS. **327 Vitest cases.**
 
 ## The problem this is about
 
@@ -59,22 +59,18 @@ would disagree with JavaScript's `<` on exactly the mixed-case keys base-62 prod
 
 ## Tested core
 
-All the hard logic is pure — no React, no network, no clock — in `src/lib/`, with **83 Vitest
-cases**.
-
-| Module | What it owns |
-| --- | --- |
-| [`fracIndex.ts`](src/lib/fracIndex.ts) | Key generation, the base-62 encoding, rollover, rebalancing |
-| [`ordering.ts`](src/lib/ordering.ts) | The total order, and turning a drop index into one absolute key |
+**327 Vitest cases** over the pure modules listed under [Modules](#modules).
 
 `fracIndex.ts` is an independent implementation of the algorithm Figma and Linear use (David
-Greenspan's *Implementing Fractional Indexing*). It is pinned against **golden vectors taken by
-running the reference library `fractional-indexing@3.2.0`** — all 21 agree, including the
+Greenspan's *Implementing Fractional Indexing*). It is pinned against **golden vectors taken
+by running the reference library `fractional-indexing@3.2.0`** — all 21 agree, including the
 `az → b00` and `Z0 → Yzz` rollovers and the quirk where the minimum key can be emitted but is
 then rejected as input.
 
-The suite also pins the concurrency cases directly: two clients minting the identical key, the
-same card moved by both, and moves of different cards never interacting.
+The suite pins the concurrency cases rather than hoping for them: two clients minting the
+identical key, the same card moved by both, a forged `origin_cmd_id` failing to ack someone
+else's command, a stale event returning the *same* snapshot reference so React skips the
+render, and a malformed presence entry being dropped instead of blanking the roster.
 
 ## Database
 
@@ -124,17 +120,56 @@ back to labelled demo data when its API key is absent.
 Each card shows its order key, so you can watch what a drag actually writes: move a card and
 exactly one key changes.
 
-## Build order
+## How the sync works
 
-- [x] **Stage 1 — ordering core.** `fracIndex.ts`, `ordering.ts`, 83 tests, and a board that
-      drags through them. Verifiable with no credentials.
-- [ ] **Stage 2 — optimistic sync.** `commandQueue.ts`, `project.ts`, `reconcile.ts`. The rule
-      is that an optimistic edit is never written into the snapshot: the UI renders
-      `project(snapshot, queue)`, which makes rollback a list removal and makes a collaborator's
-      echo unable to clobber an in-flight edit. Also verifiable with no credentials — the demo
-      adapter takes `latencyMs` and `failureRate` knobs so rollback can be *shown*.
-- [ ] **Stage 3 — Supabase.** Anonymous auth, the realtime subscription, presence avatars and
-      live cursors, and deployment.
+**The one rule: an optimistic edit is never written into the snapshot.**
+
+The snapshot holds only what the server has confirmed. The queue holds only what this client
+has asked for. They never touch, and the UI renders `project(snapshot, queue)`. Everything
+hard falls out of that separation:
+
+| | |
+| --- | --- |
+| optimistic apply | enqueue a command; the projection shows it next render |
+| rollback | drop the command and re-project — there is no saved copy to restore |
+| echo safety | a collaborator's change lands in the snapshot *underneath* my pending edit, so their rename and my move both survive |
+| retry | the command is still in the queue; there is nothing to reconstruct |
+
+The usual alternative — write optimistically into the cache, stash a backup, restore it on
+failure — needs a cancel-in-flight-refetch interlock so a concurrent echo cannot clobber the
+optimistic write. Here that interlock does not exist, because the problem does not.
+
+Commands carry **absolute target state**, never a delta. Re-applying `{ orderKey: 'a1V' }`
+twice is a no-op; re-applying `{ delta: +1 }` twice is a corruption. That one rule is what
+makes replay-after-reload safe, lets a retry be an upsert on a client-minted id, and lets
+three quick drags of one card coalesce into a single write.
+
+### Try the failure path
+
+The demo adapter has two chaos knobs, and they are the reason any of this is demonstrable
+without an account. Turn **failure rate** up and drag a card: it moves instantly, retries on
+the backoff schedule, and then rolls back with the reason surfaced. Turn **latency** up and
+cards show `saving…` while the write is in the air.
+
+## Modules
+
+All pure — no React, no network, no clock. Time and randomness are arguments.
+
+| Module | What it owns |
+| --- | --- |
+| [`fracIndex.ts`](src/lib/fracIndex.ts) | Key generation, base-62 encoding, rollover, rebalancing |
+| [`ordering.ts`](src/lib/ordering.ts) | The total order; drop index → one absolute key |
+| [`commandQueue.ts`](src/lib/commandQueue.ts) | The unconfirmed-intent FIFO: supersede, ack, retry, terminal rejection, persistence |
+| [`project.ts`](src/lib/project.ts) | `snapshot + queue → what renders` |
+| [`reconcile.ts`](src/lib/reconcile.ts) | Folding server events in, monotonically by `rev` |
+| [`presence.ts`](src/lib/presence.ts) | Collapsing one human's many tabs into one collaborator |
+| [`cursors.ts`](src/lib/cursors.ts) | Merge, TTL eviction, clamping, send-throttle |
+| [`backoff.ts`](src/lib/backoff.ts) | The retry schedule, matching realtime-js's own intervals |
+
+Cursors are deliberately **not** in the board reducer. At 20Hz with four people that is 80
+state updates a second, each re-running `project()` and re-rendering the board to move a few
+absolutely-positioned divs. They live in a separate `useSyncExternalStore` store that only
+the cursor layer subscribes to.
 
 ## Credits
 

@@ -1,143 +1,69 @@
-import { useMemo, useState } from 'react'
-import {
-  DndContext,
-  PointerSensor,
-  KeyboardSensor,
-  closestCorners,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from '@dnd-kit/core'
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { demoSnapshot } from './data/seed'
-import { planInsert, planMove, sortByOrder } from './lib/ordering'
-import { BoardColumn } from './components/BoardColumn'
-import { CardTile } from './components/CardTile'
-import type { BoardSnapshot, Card, ID } from './types'
+import { useState } from 'react'
+import { BoardProvider } from './state/BoardContext'
+import { Board } from './components/Board'
+import { PresenceBar } from './components/PresenceBar'
+import { SyncIndicator } from './components/SyncIndicator'
+import { DemoControls } from './components/DemoControls'
+import { useBoard } from './hooks/useBoard'
+import { DEMO_BOARD_ID } from './data/seed'
 
-/**
- * Stage 1 of the build: the board, driven entirely by the pure ordering core.
- *
- * Every drag goes through planMove/planInsert and writes ONE order key — exactly
- * the operation the Supabase adapter will send as a single UPDATE. Getting this
- * right with no network in the way is the point: when realtime lands, the only
- * new thing is where the write goes, not how the order is computed.
- */
-export default function App() {
-  const [snapshot, setSnapshot] = useState<BoardSnapshot>(() => demoSnapshot())
-  const [draggingId, setDraggingId] = useState<ID | null>(null)
-
-  const columns = useMemo(() => sortByOrder(Object.values(snapshot.columns)), [snapshot.columns])
-
-  const cardsByColumn = useMemo(() => {
-    const grouped: Record<ID, Card[]> = {}
-    for (const column of columns) grouped[column.id] = []
-    for (const card of Object.values(snapshot.cards)) {
-      ;(grouped[card.columnId] ??= []).push(card)
-    }
-    for (const id of Object.keys(grouped)) grouped[id] = sortByOrder(grouped[id]!)
-    return grouped
-  }, [snapshot.cards, columns])
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+function Header() {
+  const { board, mode, reason } = useBoard()
+  return (
+    <header className="topbar">
+      <div className="topbar__row">
+        <h1>{board.title}</h1>
+        {mode === 'local' ? (
+          <span className="badge badge--demo" title={reason}>
+            Demo mode
+          </span>
+        ) : (
+          <span className="badge badge--live">Supabase</span>
+        )}
+        <div className="topbar__spacer" />
+        <PresenceBar />
+        <SyncIndicator />
+      </div>
+      <p className="topbar__note">
+        {mode === 'local'
+          ? 'No Supabase credentials — open this page in a second tab and watch the two stay in sync.'
+          : 'Connected to Supabase. Open this board in another browser to collaborate.'}{' '}
+        Every move writes one fractional order key, so two people dragging at once cannot
+        clobber each other.
+      </p>
+    </header>
   )
+}
 
-  const activeCard = draggingId ? snapshot.cards[draggingId] : undefined
-
-  function columnOf(id: ID): ID | undefined {
-    if (snapshot.columns[id]) return id
-    return snapshot.cards[id]?.columnId
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    setDraggingId(null)
-    const { active, over } = event
-    if (!over) return
-
-    const cardId = String(active.id)
-    const card = snapshot.cards[cardId]
-    if (!card) return
-
-    const toColumnId = columnOf(String(over.id))
-    if (!toColumnId) return
-
-    const target = cardsByColumn[toColumnId] ?? []
-    const overIndex = target.findIndex((c) => c.id === String(over.id))
-    const toIndex = overIndex === -1 ? target.length : overIndex
-
-    // Same column: a move, which can be a no-op. Different column: always an insert.
-    const orderKey =
-      card.columnId === toColumnId
-        ? planMove(target, cardId, toIndex)
-        : planInsert(target, toIndex)
-
-    if (orderKey === null) return // dropped where it already was
-
-    setSnapshot((prev) => ({
-      ...prev,
-      cards: {
-        ...prev.cards,
-        [cardId]: { ...card, columnId: toColumnId, orderKey, rev: card.rev + 1 },
-      },
-    }))
-  }
-
-  function handleDragStart(event: DragStartEvent) {
-    setDraggingId(String(event.active.id))
-  }
+export default function App() {
+  const [chaos, setChaos] = useState({ latencyMs: 250, failureRate: 0 })
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="topbar__title">
-          <h1>{snapshot.title}</h1>
-          <span className="badge badge--demo" title="No Supabase credentials configured">
-            Demo mode
-          </span>
-        </div>
-        <p className="topbar__note">
-          Drag a card. Every move writes one fractional order key, never a renumbered
-          column — so two people dragging at once cannot clobber each other.
-        </p>
-      </header>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={() => setDraggingId(null)}
+      {/* The key remounts the provider when a knob changes: the adapter is
+          created once per board and its clientId has to stay stable, so the
+          honest way to change its options is a fresh one. */}
+      <BoardProvider
+        boardId={DEMO_BOARD_ID}
+        key={`${chaos.latencyMs}:${chaos.failureRate}`}
+        localOptions={chaos}
       >
-        <main className="board">
-          {columns.map((column) => {
-            const cards = cardsByColumn[column.id] ?? []
-            return (
-              <SortableContext
-                key={column.id}
-                items={cards.map((c) => c.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <BoardColumn column={column} count={cards.length}>
-                  {cards.map((card) => (
-                    <CardTile key={card.id} card={card} dragging={card.id === draggingId} />
-                  ))}
-                </BoardColumn>
-              </SortableContext>
-            )
-          })}
-        </main>
-      </DndContext>
-
-      <footer className="foot">
-        <strong>Stage 1 of 3.</strong> The ordering core is done and tested — 83 Vitest
-        cases over <code>fracIndex.ts</code> and <code>ordering.ts</code>, including the
-        golden vectors from the reference implementation. Next: the command queue
-        (optimistic apply with rollback), then the Supabase adapter, presence and cursors.
-        {activeCard ? <span className="foot__drag"> Dragging “{activeCard.title}”.</span> : null}
-      </footer>
+        <Header />
+        <Board />
+        <footer className="foot">
+          <DemoControls
+            failureRate={chaos.failureRate}
+            latencyMs={chaos.latencyMs}
+            onChange={setChaos}
+          />
+          <p>
+            <strong>How it works.</strong> The snapshot holds what the server confirmed; the
+            command queue holds what you asked for. They never touch, and what renders is{' '}
+            <code>project(snapshot, queue)</code> — which makes rollback a list removal and stops
+            a collaborator&rsquo;s change from clobbering your in-flight edit.
+          </p>
+        </footer>
+      </BoardProvider>
     </div>
   )
 }
