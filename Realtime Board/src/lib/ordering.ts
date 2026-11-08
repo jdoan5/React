@@ -32,11 +32,14 @@ export interface Ordered {
  *
  * Comparing ids breaks the tie the same way everywhere, including in Postgres:
  *
- *   SELECT ... ORDER BY order_key COLLATE "C", id
+ *   SELECT ... ORDER BY order_key, id
  *
- * The explicit `COLLATE "C"` matters. A locale-aware collation can sort
- * case-insensitively or ignore punctuation, which would disagree with JavaScript's
- * `<` on exactly the mixed-case keys base-62 produces. "C" is plain byte order,
+ * Ordering is done here, not in SQL — fetchSnapshot selects and sorts with this
+ * function. The schema still has to agree, though, so `order_key` is declared
+ * `COLLATE "C"` in 0001_schema.sql. Base-62 keys mix case and keyBetween(null,
+ * 'a0') emits 'Zz', which must sort BEFORE 'a0'; byte order puts it there, while
+ * a locale-aware collation (the cluster default on Supabase) sorts case-
+ * insensitively and puts it last, inverting the board. "C" is plain byte order,
  * which is what `<` does here.
  */
 export function compareOrder(a: Ordered, b: Ordered): number {

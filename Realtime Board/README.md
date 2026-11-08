@@ -43,19 +43,36 @@ the same key — say `a0V`. That is a **tie, not corruption**: both rows are val
 survive. But sort on the key alone and the pair's relative order is *undefined*, so two clients
 can render them in opposite orders permanently, with neither ever correcting.
 
-So the total order breaks ties on id, in the client and in Postgres alike:
+So the total order breaks ties on id:
 
 ```ts
 compareOrder = (a, b) => a.orderKey < b.orderKey ? -1
                        : a.orderKey > b.orderKey ?  1
                        : a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 ```
+
+Ordering happens in the client — `fetchSnapshot` selects rows and sorts them with
+`compareOrder`, so no query carries an `ORDER BY`. But the schema still has to agree with
+JavaScript, because the moment anything *does* order in SQL the two must not disagree. So
+`order_key` is declared `collate "C"`:
+
 ```sql
-select * from cards where column_id = $1 order by order_key collate "C", id;
+order_key text collate "C" not null check (char_length(order_key) between 2 and 64)
 ```
 
-The explicit `collate "C"` matters: a locale-aware collation can sort case-insensitively, which
-would disagree with JavaScript's `<` on exactly the mixed-case keys base-62 produces.
+That is load-bearing, not cosmetic. Base-62 keys mix case, and `keyBetween(null, 'a0')` emits
+`'Zz'` — a key whose whole job is to sort *before* `a0`. Byte order puts it there. A
+locale-aware collation, which is the cluster default on Supabase, sorts case-insensitively and
+puts it last:
+
+```
+byte  order:  A0  Zy  Zz  a0  a0V  a1  azz  b00     ← agrees with JavaScript `<`
+en-US order:  a0  A0  a0V  a1  azz  b00  Zy  Zz     ← prepend key lands at the end
+```
+
+Declaring it on the column rather than per query means every comparison and every index on
+`order_key` is byte-ordered by default, so a future `order by order_key, id` is correct and
+index-backed without anyone having to remember the `collate`.
 
 ## Tested core
 
@@ -63,7 +80,7 @@ would disagree with JavaScript's `<` on exactly the mixed-case keys base-62 prod
 
 `fracIndex.ts` is an independent implementation of the algorithm Figma and Linear use (David
 Greenspan's *Implementing Fractional Indexing*). It is pinned against **golden vectors taken
-by running the reference library `fractional-indexing@3.2.0`** — all 21 agree, including the
+by running the reference library `fractional-indexing@3.2.0`** — all 15 agree, including the
 `az → b00` and `Z0 → Yzz` rollovers and the quirk where the minimum key can be emitted but is
 then rejected as input.
 
@@ -81,6 +98,7 @@ render, and a malformed presence entry being dropped instead of blanking the ros
 | `0001_schema.sql` | Tables, the `rev` trigger, indexes, grants |
 | `0002_rls.sql` | Row Level Security, and the recursion trap below |
 | `0003_rpc.sql` | `create_board` and `join_board` — the two writes RLS cannot express |
+| `0004_realtime.sql` | Realtime Authorization — RLS on `realtime.messages` |
 
 Three decisions worth calling out:
 
@@ -109,7 +127,7 @@ the other.
 ```bash
 npm install
 npm run dev      # http://localhost:5178
-npm test         # 83 unit tests
+npm test         # 345 unit tests
 npm run build    # type-check + production build
 ```
 

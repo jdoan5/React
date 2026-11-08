@@ -47,7 +47,14 @@ create table public.columns (
   id               uuid primary key,          -- client-minted
   board_id         uuid not null references public.boards (id) on delete cascade,
   title            text not null check (char_length(title) between 1 and 60),
-  order_key        text not null check (char_length(order_key) between 2 and 64),
+  -- collate "C" is load-bearing, not cosmetic. Order keys are base-62, so they
+  -- mix case: keyBetween(null, 'a0') emits 'Zz', which MUST sort before 'a0'.
+  -- Byte order puts it there; a locale-aware collation (the cluster default on
+  -- Supabase) sorts case-insensitively and puts 'Zz' last, inverting the board.
+  -- Declaring it on the column makes byte order the default for every comparison
+  -- and index on this column, so it matches the `<` operator in JS without each query
+  -- having to remember an explicit COLLATE.
+  order_key        text collate "C" not null check (char_length(order_key) between 2 and 64),
   archived_at      timestamptz,
   -- Monotonic per row, assigned by trigger. The client discards any change event
   -- whose rev is not greater than the one it holds, which makes replayed echoes
@@ -83,7 +90,14 @@ create table public.cards (
   -- collide on one value, or force a renumber of the whole column.
   -- text, not float: a double exhausts its mantissa after ~50 inserts into one
   -- gap and then silently returns a value equal to a neighbour.
-  order_key        text not null check (char_length(order_key) between 2 and 64),
+  -- collate "C" is load-bearing, not cosmetic. Order keys are base-62, so they
+  -- mix case: keyBetween(null, 'a0') emits 'Zz', which MUST sort before 'a0'.
+  -- Byte order puts it there; a locale-aware collation (the cluster default on
+  -- Supabase) sorts case-insensitively and puts 'Zz' last, inverting the board.
+  -- Declaring it on the column makes byte order the default for every comparison
+  -- and index on this column, so it matches the `<` operator in JS without each query
+  -- having to remember an explicit COLLATE.
+  order_key        text collate "C" not null check (char_length(order_key) between 2 and 64),
   archived_at      timestamptz,
   rev              bigint not null default 1,
   origin_client_id text,
