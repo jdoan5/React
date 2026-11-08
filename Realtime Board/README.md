@@ -1,5 +1,7 @@
 # Realtime Board
 
+> **🔗 Live: https://realtime-board-gamma.vercel.app**
+
 A multiplayer task board on **React 19 + TypeScript + Vite + Supabase**.
 
 The repo's [Workflow Board](../Workflow%20Board) fakes multiplayer: a simulated-collaborator

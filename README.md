@@ -25,6 +25,7 @@ architecture, the complete feature list, and how to run it.
 | 📈 **Interactive Stocks** | A market dashboard on the **massive.com** API — ticker search, an interactive SVG price chart with range tabs, and a saved watchlist. The API key stays server-side behind a proxy, with a demo-data fallback. | **[Live ↗](https://interactive-stocks-zeta.vercel.app)** · [Folder](./Interactive%20Stocks) · [README](./Interactive%20Stocks/README.md) |
 | 🧮 **Calculator** | A graded-lab calculator — add, subtract, multiply, divide, plus reset-input and reset-result, with division-by-zero handling. Built on `useState` + `useRef`. | [Folder](./Calculator) · [README](./Calculator/README.md) |
 | ⚖️ **BMI Calculator** | BMI with WHO category bands, a hand-built SVG gauge, the healthy weight range for your height, lossless metric↔imperial switching, and saved history. | **[Live ↗](https://bmi-calculator-eight-rose.vercel.app)** · [Folder](./BMI%20Calculator) · [README](./BMI%20Calculator/README.md) |
+| 🔄 **Realtime Board** | A multiplayer task board on Supabase — fractional-index ordering so concurrent drags never collide, with the ordering core pure and tested against the reference implementation's golden vectors. | **[Live ↗](https://realtime-board-gamma.vercel.app)** · [Folder](./Realtime%20Board) · [README](./Realtime%20Board/README.md) |
 
 > **Note on `Calculator`:** it mirrors a Coursera graded lab. The lab's file is `src/App.js`;
 > here it is `src/App.jsx` — Vite needs the extension for JSX — with **byte-identical
@@ -83,6 +84,8 @@ React/
 ├── Calculator/                 # Graded-lab calculator (React + Vite)
 │   └── README.md               #   ↳ its own docs
 ├── BMI Calculator/             # BMI with WHO bands + SVG gauge · ▲ live on Vercel
+│   └── README.md               #   ↳ its own docs
+├── Realtime Board/             # Multiplayer board on Supabase · ▲ live on Vercel
 │   └── README.md               #   ↳ its own docs
 └── README.md                   # ← this overview
 ```
