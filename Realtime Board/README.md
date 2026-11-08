@@ -10,7 +10,7 @@ auth, real sync between real browsers — and it exists mostly to confront the p
 never had to: **what happens when two people drag the same card at the same time.**
 
 > **Complete.** Ordering core, optimistic sync with rollback, and the Supabase layer —
-> presence, live cursors, anonymous auth and RLS. **327 Vitest cases.**
+> presence, live cursors, anonymous auth and RLS. **345 Vitest cases.**
 
 ## The problem this is about
 
@@ -59,7 +59,7 @@ would disagree with JavaScript's `<` on exactly the mixed-case keys base-62 prod
 
 ## Tested core
 
-**327 Vitest cases** over the pure modules listed under [Modules](#modules).
+**345 Vitest cases** over the pure modules listed under [Modules](#modules).
 
 `fracIndex.ts` is an independent implementation of the algorithm Figma and Linear use (David
 Greenspan's *Implementing Fractional Indexing*). It is pinned against **golden vectors taken
