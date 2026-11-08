@@ -2,7 +2,7 @@
 
 > **🔗 Live: https://realtime-board-gamma.vercel.app**
 
-A multiplayer task board on **React 19 + TypeScript + Vite + Supabase**.
+A multiplayer task board on **React 19 + TypeScript + Vitsse + Supabase**.
 
 The repo's [Workflow Board](../Workflow%20Board) fakes multiplayer: a simulated-collaborator
 engine and `localStorage` sync between tabs. This is the honest version — real Postgres, real
