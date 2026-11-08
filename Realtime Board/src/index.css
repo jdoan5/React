@@ -1,0 +1,312 @@
+/* ============================================================
+   Realtime Board — cool slate theme, light and dark
+   ============================================================ */
+
+:root {
+  --bg: #f6f8fa;
+  --bg-grad: radial-gradient(1200px 560px at 10% -12%, #e6eef7 0%, #f6f8fa 58%);
+  --surface: #ffffff;
+  --surface-2: #eef2f6;
+  --surface-3: #e3e9f0;
+  --border: #dce3ea;
+  --border-strong: #c6d0da;
+
+  --text: #121a24;
+  --text-dim: #51606f;
+  --text-mute: #8695a5;
+
+  --accent: #3b6ef5;
+  --accent-2: #2a55cc;
+  --accent-ink: #ffffff;
+
+  --urgent: #e5484d;
+  --high: #f2831f;
+  --medium: #3b6ef5;
+  --low: #8695a5;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow-sm: 0 1px 2px rgba(18, 26, 36, 0.06);
+  --shadow: 0 10px 28px -14px rgba(18, 26, 36, 0.3);
+
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1218;
+    --bg-grad: radial-gradient(1200px 560px at 10% -12%, #16202c 0%, #0d1218 58%);
+    --surface: #151d26;
+    --surface-2: #1b2531;
+    --surface-3: #222e3c;
+    --border: #243040;
+    --border-strong: #35445a;
+
+    --text: #e6edf5;
+    --text-dim: #a3b1c2;
+    --text-mute: #74849a;
+
+    --accent: #5b87ff;
+    --accent-2: #7aa0ff;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.7);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.app {
+  min-height: 100%;
+  background: var(--bg-grad);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 34px 24px 24px;
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+}
+.topbar__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.topbar h1 {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.topbar__note {
+  margin-top: 7px;
+  color: var(--text-dim);
+  font-size: 14px;
+  max-width: 76ch;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.badge--demo {
+  background: var(--surface-3);
+  color: var(--text-dim);
+  border: 1px solid var(--border-strong);
+}
+
+/* ---------- Board ---------- */
+
+.board {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.column {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  min-height: 160px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.column--over {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-2));
+}
+.column__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px 10px;
+}
+.column__title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+}
+.column__count {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--text-mute);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.column__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.column__empty {
+  color: var(--text-mute);
+  font-size: 13px;
+  text-align: center;
+  padding: 18px 8px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--low);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  padding: 11px 12px;
+  cursor: grab;
+  touch-action: none;
+}
+.card:active {
+  cursor: grabbing;
+}
+.card--urgent {
+  border-left-color: var(--urgent);
+}
+.card--high {
+  border-left-color: var(--high);
+}
+.card--medium {
+  border-left-color: var(--medium);
+}
+.card--low {
+  border-left-color: var(--low);
+}
+.card--dragging {
+  opacity: 0.45;
+  box-shadow: var(--shadow);
+}
+.card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 9px;
+}
+.card__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.32;
+}
+.card__desc {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.card__key {
+  display: inline-block;
+  margin-top: 9px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-mute);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+.chip {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #fff;
+}
+.chip--urgent {
+  background: var(--urgent);
+}
+.chip--high {
+  background: var(--high);
+}
+.chip--medium {
+  background: var(--medium);
+}
+.chip--low {
+  background: var(--low);
+}
+
+/* ---------- Footer ---------- */
+
+.foot {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-mute);
+  padding: 6px 2px 12px;
+}
+.foot strong {
+  color: var(--text-dim);
+}
+.foot code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.foot__drag {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1000px) {
+  .board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 620px) {
+  .board {
+    grid-template-columns: 1fr;
+  }
+  .app {
+    padding: 22px 14px;
+  }
+}
