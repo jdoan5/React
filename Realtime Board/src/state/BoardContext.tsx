@@ -15,24 +15,37 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
 import { backoffMs } from '../lib/backoff'
-import { deserializeQueue, nextDue, serializeQueue, QUEUE_STORAGE_KEY } from '../lib/commandQueue'
+import {
+  deserializeQueue,
+  nextDue,
+  QUEUE_STORAGE_KEY,
+  queueStorageKey,
+  serializeQueue,
+  storedQueueFor,
+} from '../lib/commandQueue'
 import { project } from '../lib/project'
 import { initialState, syncReducer } from './syncReducer'
 import { createAdapter } from '../sync'
 import { SyncRejection, type Command, type CursorPing, type LocalAdapterOptions } from '../sync/adapter'
-import { BoardContext, CursorSubscribeContext, type BoardContextValue } from './contexts'
+import { BoardContext, CursorSubscribeContext, type BoardContextValue, type BoardFailure } from './contexts'
 import { uuid } from '../utils/ids'
 import type { Collaborator, ID } from '../types'
 
 
 interface Props {
   boardId: ID
+  /**
+   * Share token from an invite link. Only consulted when this visitor is not
+   * yet a member; members reopen with none. Changing it means remounting the
+   * provider (the front door keys it on board + invite), not re-running connect.
+   */
+  invite?: string | null
   children: ReactNode
   /** Demo-mode chaos knobs. Ignored when Supabase credentials are present. */
   localOptions?: LocalAdapterOptions
 }
 
-export function BoardProvider({ boardId, children, localOptions }: Props) {
+export function BoardProvider({ boardId, invite = null, children, localOptions }: Props) {
   // One adapter for the lifetime of the provider. Re-creating it would drop the
   // socket and mint a new clientId, which would orphan every queued command.
   const [choice] = useState(() => createAdapter(localOptions))
@@ -44,7 +57,14 @@ export function BoardProvider({ boardId, children, localOptions }: Props) {
     // client-minted ids make re-sending them safe either way.
     let queue = base.queue
     try {
-      queue = deserializeQueue(localStorage.getItem(QUEUE_STORAGE_KEY))
+      // The old bare key is removed by the persist effect below, and only
+      // AFTER the queue is safely written under the new one.
+      const raw = storedQueueFor(
+        localStorage.getItem(queueStorageKey(id)),
+        localStorage.getItem(QUEUE_STORAGE_KEY),
+        mode,
+      )
+      queue = deserializeQueue(raw)
     } catch {
       // A corrupt or foreign value under our key is not worth failing boot over.
     }
@@ -52,6 +72,10 @@ export function BoardProvider({ boardId, children, localOptions }: Props) {
   })
 
   const [me, setMe] = useState<Collaborator | null>(null)
+  // A connect that failed outright — sign-in disabled, no invite, a dead link.
+  // Distinct from status 'offline', which a dropped socket also produces: this
+  // one will not heal by reconnecting, so the UI shows it instead of the board.
+  const [failure, setFailure] = useState<BoardFailure | null>(null)
 
   // --- connect -------------------------------------------------------------
   useEffect(() => {
@@ -59,7 +83,7 @@ export function BoardProvider({ boardId, children, localOptions }: Props) {
     let teardown: (() => void) | undefined
 
     async function connect() {
-      const identity = await adapter.identify(boardId)
+      const identity = await adapter.identify(boardId, invite)
       if (cancelled) return
       setMe(identity)
 
@@ -92,6 +116,7 @@ export function BoardProvider({ boardId, children, localOptions }: Props) {
     void connect().catch((error: unknown) => {
       if (cancelled) return
       const message = error instanceof Error ? error.message : String(error)
+      setFailure({ message, terminal: error instanceof SyncRejection && !error.retryable })
       dispatch({ type: 'status', status: 'offline', detail: message })
     })
 
@@ -99,7 +124,9 @@ export function BoardProvider({ boardId, children, localOptions }: Props) {
       cancelled = true
       teardown?.()
     }
-  }, [adapter, boardId])
+    // The front door keys the provider on board + invite, so a new invite
+    // remounts it; listing `invite` here is for honesty, not for re-runs.
+  }, [adapter, boardId, invite])
 
   // Cursor pings bypass the reducer entirely. A ref-held Set, so adding or
   // removing a subscriber never re-opens the socket.
@@ -115,11 +142,12 @@ export function BoardProvider({ boardId, children, localOptions }: Props) {
   // --- persist the queue ---------------------------------------------------
   useEffect(() => {
     try {
-      localStorage.setItem(QUEUE_STORAGE_KEY, serializeQueue(state.queue))
+      localStorage.setItem(queueStorageKey(boardId), serializeQueue(state.queue))
+      if (mode === 'local') localStorage.removeItem(QUEUE_STORAGE_KEY)
     } catch {
       // Quota or private mode: the queue stays in memory, which still works.
     }
-  }, [state.queue])
+  }, [state.queue, boardId, mode])
 
   // --- drain ---------------------------------------------------------------
   // One in-flight write at a time, FIFO, so causality holds: a card.create can
@@ -235,10 +263,11 @@ export function BoardProvider({ boardId, children, localOptions }: Props) {
       clientId: adapter.clientId,
       adapter,
       boardId,
+      failure,
       issue,
       retire,
     }),
-    [projection, state, me, mode, reason, adapter, boardId, issue, retire],
+    [projection, state, me, mode, reason, adapter, boardId, failure, issue, retire],
   )
 
   return (

@@ -136,9 +136,14 @@ export function createLocalAdapter(
     mode: 'local',
     clientId,
 
-    async identify(_boardId: ID): Promise<Collaborator> {
+    async identify(_boardId: ID, _invite?: string | null): Promise<Collaborator> {
       const me = identity()
       return { userId: me.userId, name: me.name, color: me.color, tabs: 1 }
+    },
+
+    // Demo mode has no server to join through, so there is no link to share.
+    async inviteToken(_boardId: ID): Promise<string | null> {
+      return null
     },
 
     async fetchSnapshot(boardId: ID): Promise<BoardSnapshot> {

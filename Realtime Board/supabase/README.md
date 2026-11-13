@@ -23,6 +23,7 @@ supabase db push
 | `0002_rls.sql` | Row Level Security, and the recursion-trap helper |
 | `0003_rpc.sql` | `create_board` / `join_board` |
 | `0004_realtime.sql` | Publication + Realtime Authorization policies |
+| `0005_front_door.sql` | `create_board` makes the four default columns; `join_board` is race-free |
 
 ## 3. Things no migration can express
 
@@ -40,15 +41,30 @@ These are dashboard settings, and the app will not work without the first one.
    authorization decision, so a revoked membership keeps working until the client reconnects
    or its token refreshes.
 
-4. **Prune guest users.** Anonymous users are *never* cleaned up automatically, so they
-   accumulate in `auth.users` forever. Enable `pg_cron` and schedule something like:
+4. **Prune guest users — by inactivity, never by age.** Anonymous users are *never* cleaned up
+   automatically, so they accumulate in `auth.users` forever. But deleting a user **cascades**:
+   every board they created goes with it (`boards.created_by … on delete cascade`), including
+   boards other people are actively using. So prune guests whose boards have gone quiet, not
+   guests who are merely old. Enable `pg_cron` and schedule something like:
 
    ```sql
-   select cron.schedule('prune-guests', '0 3 * * *', $$
-     delete from auth.users
-     where is_anonymous is true and created_at < now() - interval '30 days'
+   select cron.schedule('prune-idle-guests', '0 3 * * *', $$
+     delete from auth.users u
+     where u.is_anonymous
+       and u.created_at < now() - interval '30 days'
+       -- keep anyone on a board where any card changed in the last 30 days
+       and not exists (
+         select 1
+         from public.board_members m
+         join public.cards c on c.board_id = m.board_id
+         where m.user_id = u.id
+           and c.updated_at > now() - interval '30 days'
+       )
    $$);
    ```
+
+   Because the front door gives every first-time visitor a board, this also clears out the
+   empty boards of people who looked once and left.
 
 ## 4. Point the app at it
 
@@ -61,6 +77,16 @@ Fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from Project Settings �
 Both are safe in client-side code — the anon/publishable key is *designed* to be public, and
 RLS is what actually enforces access. **Never** put a `service_role` (secret) key in a
 `VITE_`-prefixed variable: Vite inlines those into the bundle it ships to the browser.
+
+For the deployed site, add the same two variables under Vercel → Project → Settings →
+Environment Variables, then **redeploy**. Vite bakes them in at build time, so a deployment built
+before they existed keeps running in demo mode.
+
+## 5. Try it
+
+Open the site: you get a board of your own, and its invite link is already in the address bar.
+Click **Copy invite link**, open it in a different browser — or a private window, which counts
+as a new anonymous user — and the two of you are on the same board.
 
 ## Why these choices
 

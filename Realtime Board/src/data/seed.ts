@@ -15,7 +15,12 @@ const EPOCH = new Date('2026-01-05T09:00:00Z').toISOString()
 
 const BOARD_ID = 'demo-board'
 
-const COLUMN_TITLES = ['Backlog', 'In progress', 'In review', 'Done']
+/**
+ * Also the columns every new live board starts with — create_board() in
+ * supabase/migrations/0005 inserts these same four titles with the same keys,
+ * and defaultColumns.test.ts fails if the two ever drift apart.
+ */
+export const COLUMN_TITLES = ['Backlog', 'In progress', 'In review', 'Done'] as const
 
 const CARDS: Array<{ column: number; title: string; priority: Priority; description: string }> = [
   { column: 0, title: 'Fractional index ordering', priority: 'high', description: 'Concurrent drags must not collide on an integer position.' },

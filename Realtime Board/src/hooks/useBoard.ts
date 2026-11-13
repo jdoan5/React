@@ -12,11 +12,15 @@ export function useBoardContext(): BoardContextValue {
 }
 
 export function useBoard() {
-  const { projection, state, mode, reason, me } = useBoardContext()
+  const { projection, state, mode, reason, me, boardId, failure } = useBoardContext()
   return {
     board: projection,
+    boardId,
     status: state.status,
     detail: state.detail,
+    /** True once the first snapshot has arrived — the board really is open. */
+    loaded: state.snapshot.fetchedAt > 0,
+    failure,
     mode,
     reason,
     me,
