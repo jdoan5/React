@@ -71,6 +71,33 @@ export const MAX_ATTEMPTS = 5
 
 /** Versioned, so a shape change is a clean discard rather than a misparse. */
 export const QUEUE_STORAGE_KEY = 'realtime-board:queue:v1'
+
+/**
+ * One persisted queue per board. A command names cards and columns by id, and
+ * only means something against the board it was issued on — replayed against
+ * another board, a create lands in the wrong place and an edit reaches across
+ * boards. With a single shared key, opening board B after a refresh on board A
+ * would do exactly that.
+ */
+export function queueStorageKey(boardId: ID): string {
+  return `${QUEUE_STORAGE_KEY}:${boardId}`
+}
+
+/**
+ * Which stored queue a board starts from, given what is under its own key and
+ * under the old bare key. Before queues were per board, the demo board's lived
+ * under the bare key, so demo mode adopts that once — a returning visitor keeps
+ * their pending and rejected edits. Live mode never adopts it: it could not
+ * open a board at all before per-board keys, so nothing there is its.
+ */
+export function storedQueueFor(
+  perBoard: string | null,
+  legacy: string | null,
+  mode: 'local' | 'supabase',
+): string | null {
+  if (perBoard !== null) return perBoard
+  return mode === 'local' ? legacy : null
+}
 const STORAGE_VERSION = 1
 
 /**

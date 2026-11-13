@@ -195,8 +195,19 @@ export interface SyncAdapter {
   /** Stable per tab. Written to every row; distinguishes my echo from yours. */
   readonly clientId: ID
 
-  /** Supabase: anonymous sign-in + create_board/join_board. Local: a persisted guest. */
-  identify(boardId: ID): Promise<Collaborator>
+  /**
+   * Supabase: anonymous sign-in, then join_board() with `invite` unless already
+   * a member — a member never needs the token again, so reopening a board from
+   * history works with none. A non-member with no token is refused with a
+   * readable SyncRejection('denied'). Local: a persisted guest; `invite` is ignored.
+   */
+  identify(boardId: ID, invite?: string | null): Promise<Collaborator>
+
+  /**
+   * The board's share token, for building an invite link. Null in local mode,
+   * which has no server to join through. Readable by any member via RLS.
+   */
+  inviteToken(boardId: ID): Promise<string | null>
 
   fetchSnapshot(boardId: ID): Promise<BoardSnapshot>
 
@@ -218,6 +229,24 @@ export interface SyncAdapter {
 
   /** Cursor or drag ghost. Fire-and-forget, throttled by the caller, never throws. */
   sendCursor(boardId: ID, ping: CursorPing): void
+}
+
+/** A board just made by create_board(), with the token for its invite link. */
+export interface NewBoard {
+  readonly boardId: ID
+  readonly invite: string
+  readonly title: string
+}
+
+/**
+ * Making boards, as distinct from syncing one. Separate from SyncAdapter because
+ * it is needed BEFORE there is a board to sync — the front door creates the
+ * board, then mounts a provider for it. Supabase only: demo mode has its one
+ * seeded board and nothing to create.
+ */
+export interface BoardDirectory {
+  /** Signs in anonymously if needed; the board arrives with its default columns (0005). */
+  createBoard(): Promise<NewBoard>
 }
 
 export interface AdapterChoice {

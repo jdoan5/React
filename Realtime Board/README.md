@@ -9,8 +9,10 @@ engine and `localStorage` sync between tabs. This is the honest version — real
 auth, real sync between real browsers — and it exists mostly to confront the problem the mock
 never had to: **what happens when two people drag the same card at the same time.**
 
-> **Complete.** Ordering core, optimistic sync with rollback, and the Supabase layer —
-> presence, live cursors, anonymous auth and RLS. **345 Vitest cases.**
+> **Two modes.** With no credentials it runs as a labelled demo that syncs between tabs of one
+> browser. Point it at a Supabase project ([setup](supabase/README.md)) and it becomes real
+> multiplayer: every visitor gets a board of their own, and an invite link brings anyone else onto
+> it. **442 Vitest cases.**
 
 ## The problem this is about
 
@@ -76,7 +78,7 @@ index-backed without anyone having to remember the `collate`.
 
 ## Tested core
 
-**345 Vitest cases** over the pure modules listed under [Modules](#modules).
+**442 Vitest cases** over the pure modules listed under [Modules](#modules).
 
 `fracIndex.ts` is an independent implementation of the algorithm Figma and Linear use (David
 Greenspan's *Implementing Fractional Indexing*). It is pinned against **golden vectors taken
@@ -99,6 +101,7 @@ render, and a malformed presence entry being dropped instead of blanking the ros
 | `0002_rls.sql` | Row Level Security, and the recursion trap below |
 | `0003_rpc.sql` | `create_board` and `join_board` — the two writes RLS cannot express |
 | `0004_realtime.sql` | Realtime Authorization — RLS on `realtime.messages` |
+| `0005_front_door.sql` | `create_board` with the four default columns; a race-free `join_board` |
 
 Three decisions worth calling out:
 
@@ -127,7 +130,7 @@ the other.
 ```bash
 npm install
 npm run dev      # http://localhost:5178
-npm test         # 345 unit tests
+npm test         # 442 unit tests
 npm run build    # type-check + production build
 ```
 
@@ -137,6 +140,29 @@ back to labelled demo data when its API key is absent.
 
 Each card shows its order key, so you can watch what a drag actually writes: move a card and
 exactly one key changes.
+
+## Boards and invite links
+
+With Supabase connected, the app has a front door — the part that decides which board you are
+looking at:
+
+| You open… | You get |
+| --- | --- |
+| the site with no link, for the first time | a new board of your own, with Backlog → Done already in place |
+| the site with no link, again | the board you used last |
+| an invite link | that board — you join it, and it joins your list |
+| **New board** | another board of your own |
+
+**Copy invite link** puts the board's link on your clipboard, and anyone who opens it joins as an
+editor. The share token rides in the URL *fragment* — `#board=…&invite=…` — and everything after
+`#` stays in the browser: it is never sent to a server, never logged, never leaked in a
+`Referer` header.
+
+Membership lives in Postgres, so a member never needs the token again. This browser keeps only a
+list of board ids to come back to — no tokens. Unsent edits are queued per board, so a change
+made on one board can never replay against another.
+
+Setup is a free Supabase project and about ten minutes: [`supabase/README.md`](supabase/README.md).
 
 ## How the sync works
 
@@ -183,6 +209,9 @@ All pure — no React, no network, no clock. Time and randomness are arguments.
 | [`presence.ts`](src/lib/presence.ts) | Collapsing one human's many tabs into one collaborator |
 | [`cursors.ts`](src/lib/cursors.ts) | Merge, TTL eviction, clamping, send-throttle |
 | [`backoff.ts`](src/lib/backoff.ts) | The retry schedule, matching realtime-js's own intervals |
+| [`boardLink.ts`](src/lib/boardLink.ts) | Reading and writing `#board=…&invite=…` |
+| [`recentBoards.ts`](src/lib/recentBoards.ts) | The boards this browser has opened, newest first |
+| [`frontDoor.ts`](src/lib/frontDoor.ts) | Which board to open, and whether this visitor may join it |
 
 Cursors are deliberately **not** in the board reducer. At 20Hz with four people that is 80
 state updates a second, each re-running `project()` and re-rendering the board to move a few
